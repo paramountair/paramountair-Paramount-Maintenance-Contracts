@@ -20,136 +20,21 @@
         <button class="nav-link active" data-view="dashboard">Dashboard</button>
         <button class="nav-link" data-view="contracts">Maintenance Contracts Generated</button>
         <button class="nav-link" data-view="new-contract">New Contract Set Up</button>
-        <button class="nav-link" data-view="proposal">Proposal Generator</button>
+        <button class="nav-link" data-view="proposal">Proposal Preview</button>
         <button class="nav-link" data-view="settings">Costing Rules</button>
       </nav>
       <div class="side-note">
         <span class="pill">Demo</span>
-        <p>Fake costings for prototype use only. Replace rules with approved Paramount estimating rates before live use.</p>
+        <p>Prototype costings only. Replace with approved Paramount estimating rules before live use.</p>
       </div>
     </aside>
 
     <main class="main">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">Comfort Engineered for Australia</p>
-          <h1 id="page-title">Maintenance Proposal Platform</h1>
-        </div>
-        <div class="top-actions">
-          <button class="ghost-btn" id="loadSampleBtn">Load Sample Data</button>
-          <button class="primary-btn" data-view-button="new-contract">New Proposal</button>
-        </div>
-      </header>
-
-      <section id="dashboard" class="view active">
-        <div class="hero-panel">
-          <div>
-            <span class="section-chip">01</span>
-            <h2>Recurring revenue, contract risk and proposal pipeline in one place.</h2>
-            <p>Upload customer details and asset schedules, apply internal costing rules, then generate a branded customer-facing maintenance proposal and an internal profitability review.</p>
-          </div>
-          <div class="hero-card">
-            <span>Pipeline value</span>
-            <strong id="pipelineValue">$0</strong>
-            <small>Draft and outstanding proposals</small>
-          </div>
-        </div>
-
-        <div class="kpi-grid">
-          <div class="kpi"><span>Total active maintenance contracts</span><strong id="activeContracts">0</strong></div>
-          <div class="kpi"><span>Total contracts value</span><strong id="totalValue">$0</strong></div>
-          <div class="kpi"><span>Monthly recurring revenue</span><strong id="mrr">$0</strong></div>
-          <div class="kpi"><span>Expiring in 30 days</span><strong id="exp30">0</strong></div>
-          <div class="kpi"><span>Expiring in 60 days</span><strong id="exp60">0</strong></div>
-          <div class="kpi"><span>Expiring in 90 days</span><strong id="exp90">0</strong></div>
-        </div>
-
-        <div class="two-col">
-          <div class="panel">
-            <div class="panel-head"><h3>Revenue forecast</h3><span class="muted">Next 12 months</span></div>
-            <div id="forecastBars" class="bars"></div>
-          </div>
-          <div class="panel">
-            <div class="panel-head"><h3>Contracts needing attention</h3><span class="muted">Outstanding / draft</span></div>
-            <div id="attentionList" class="attention-list"></div>
-          </div>
-        </div>
-      </section>
-
-      <section id="contracts" class="view">
-        <div class="panel">
-          <div class="panel-head">
-            <div><span class="section-chip">02</span><h2>Maintenance contracts generated</h2></div>
-            <button class="primary-btn" data-view-button="new-contract">Create New</button>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Customer</th><th>Status</th><th>Annual value</th><th>Projected cost</th><th>Profit</th><th>Margin</th><th>Expiry</th><th></th></tr></thead>
-              <tbody id="contractsTable"></tbody>
-            </table>
-          </div>
-        </div>
-        <div id="contractDetail" class="panel detail-panel"></div>
-      </section>
-
-      <section id="new-contract" class="view">
-        <div class="panel">
-          <div class="panel-head"><div><span class="section-chip">03</span><h2>New contract set up</h2></div></div>
-          <div class="setup-grid">
-            <div>
-              <h3>Customer details</h3>
-              <p class="muted">Upload a customer CSV or type the details below.</p>
-              <div class="upload-box"><input type="file" id="customerFile" accept=".csv" /><label for="customerFile">Upload customer CSV</label></div>
-              <div class="form-grid">
-                <label>Customer name<input id="customerName" value="Southbank Data Hall" /></label>
-                <label>Site address<input id="siteAddress" value="81 Riverside Drive, Southbank VIC" /></label>
-                <label>Contact person<input id="contactPerson" value="Operations Lead" /></label>
-                <label>Email<input id="email" value="ops@southbankdatahall.com.au" /></label>
-                <label>Phone<input id="phone" value="03 9000 1111" /></label>
-                <label>Contract term months<input id="term" type="number" value="36" /></label>
-                <label>Target margin %<input id="targetMargin" type="number" value="38" /></label>
-                <label>Start date<input id="startDate" type="date" value="2026-07-01" /></label>
-              </div>
-            </div>
-            <div>
-              <h3>Asset list</h3>
-              <p class="muted">Upload the fake asset register or paste/add assets manually.</p>
-              <div class="upload-box"><input type="file" id="assetFile" accept=".csv" /><label for="assetFile">Upload asset CSV</label></div>
-              <div class="asset-entry">
-                <select id="assetType"></select>
-                <input id="assetQty" type="number" value="1" min="1" />
-                <select id="assetFreq"><option>Monthly</option><option>Quarterly</option><option>Six Monthly</option><option>Annual</option></select>
-                <input id="assetLocation" placeholder="Location" value="Roof Plantroom" />
-                <button class="ghost-btn" id="addAssetBtn">Add Asset</button>
-              </div>
-              <div class="table-wrap small"><table><thead><tr><th>Asset</th><th>Qty</th><th>Frequency</th><th>Location</th><th></th></tr></thead><tbody id="draftAssets"></tbody></table></div>
-            </div>
-          </div>
-          <div class="action-row">
-            <button class="ghost-btn" id="downloadCustomerTemplate">Download customer template</button>
-            <button class="ghost-btn" id="downloadAssetTemplate">Download asset template</button>
-            <button class="primary-btn" id="generateContractBtn">Generate Maintenance Proposal</button>
-          </div>
-        </div>
-      </section>
-
-      <section id="proposal" class="view">
-        <div class="proposal-actions no-print">
-          <button class="ghost-btn" id="showInternalBtn">Internal Costing</button>
-          <button class="ghost-btn" id="showCustomerBtn">Customer Proposal</button>
-          <button class="primary-btn" id="printBtn">Print / Save as PDF</button>
-          <button class="primary-btn" id="downloadHtmlBtn">Download Proposal HTML</button>
-        </div>
-        <div id="proposalOutput" class="proposal-document"></div>
-      </section>
-
-      <section id="settings" class="view">
-        <div class="panel">
-          <div class="panel-head"><div><span class="section-chip">04</span><h2>Fake Paramount costing rules</h2></div></div>
-          <p class="muted">These prototype rates are intentionally fake. They make the demo work but should be replaced with approved internal rules.</p>
-          <div id="rulesGrid" class="rules-grid"></div>
-        </div>
-      </section>
+      <section id="dashboard" class="view active"></section>
+      <section id="contracts" class="view"></section>
+      <section id="new-contract" class="view"></section>
+      <section id="proposal" class="view"></section>
+      <section id="settings" class="view"></section>
     </main>
   </div>
   <script src="data.js"></script>

@@ -1,175 +1,129 @@
-let contracts = structuredClone(SAMPLE_CONTRACTS);
-let draftAssets = [asset("Chiller",2,"Quarterly","Roof Plantroom"), asset("Air Handling Unit",8,"Quarterly","Levels 1-4"), asset("BMS / Controls",1,"Quarterly","Control Room")];
-let currentContract = null;
-let proposalMode = "customer";
+let contracts = demoContracts.map(enrichContract);
+let selectedContractId = contracts[0].id;
 
 const $ = (id) => document.getElementById(id);
-const money = (v) => Number(v || 0).toLocaleString("en-AU", { style:"currency", currency:"AUD", maximumFractionDigits:0 });
-const pct = (v) => `${Number(v || 0).toFixed(1)}%`;
+const money = (v) => Number(v || 0).toLocaleString("en-AU", {style:"currency", currency:"AUD", maximumFractionDigits:0});
 const today = () => new Date("2026-06-24T09:00:00+10:00");
-const endDate = (start, months) => { const d = new Date(start); d.setMonth(d.getMonth() + Number(months)); return d; };
-const daysUntil = (date) => Math.ceil((date - today()) / 86400000);
 
-function visitsFromFrequency(freq, fallback){
+function visitsFromFrequency(freq, fallback) {
   const f = String(freq || "").toLowerCase();
-  if(f.includes("month")) return 12;
-  if(f.includes("quarter")) return 4;
-  if(f.includes("six")) return 2;
-  if(f.includes("annual")) return 1;
+  if (f.includes("month")) return 12;
+  if (f.includes("quarter")) return 4;
+  if (f.includes("six")) return 2;
+  if (f.includes("annual")) return 1;
   return fallback || 4;
 }
 
-function calculateContract(c){
-  const rows = c.assets.map(a => {
+function endDate(start, months) {
+  const d = new Date(start);
+  d.setMonth(d.getMonth() + Number(months));
+  return d;
+}
+
+function daysUntil(date) {
+  return Math.ceil((date - today()) / (1000 * 60 * 60 * 24));
+}
+
+function calculateAssets(assets, targetMargin) {
+  const rows = assets.map((a) => {
     const rule = COSTING_RULES[a.type] || COSTING_RULES["Split System"];
     const visits = visitsFromFrequency(a.frequency, rule.visits);
-    const labour = a.quantity * rule.labourHours * visits * FINANCIAL_RULES.labourRate;
-    const materials = a.quantity * rule.materials * visits;
-    const vehicle = visits * FINANCIAL_RULES.vehiclePerVisit;
-    const direct = labour + materials + vehicle;
-    const overhead = direct * FINANCIAL_RULES.overheadPercent;
-    const admin = direct * FINANCIAL_RULES.adminPercent;
-    const contingency = direct * FINANCIAL_RULES.contingencyPercent;
-    const projectedCost = direct + overhead + admin + contingency;
-    return { ...a, visits, labour, materials, vehicle, overhead, admin, contingency, projectedCost, risk: rule.risk };
+    const quantity = Number(a.quantity || 1);
+    const labour = quantity * rule.labourHours * visits * LABOUR_RATE;
+    const materials = quantity * rule.baseMaterials * visits;
+    const vehicle = visits * VEHICLE_RATE;
+    const directCost = labour + materials + vehicle;
+    const admin = directCost * ADMIN_PERCENT;
+    const overhead = directCost * OVERHEAD_PERCENT;
+    const projectedCost = directCost + admin + overhead;
+    return {...a, visits, quantity, labour, materials, vehicle, admin, overhead, projectedCost};
   });
-  const projectedCost = rows.reduce((s,r)=>s+r.projectedCost,0);
-  const annualValue = projectedCost / (1 - (Number(c.targetMargin || 35) / 100));
+  const projectedCost = rows.reduce((s,r) => s + r.projectedCost, 0);
+  const marginDecimal = Number(targetMargin || DEFAULT_MARGIN) / 100;
+  const annualValue = projectedCost / (1 - marginDecimal);
   const profit = annualValue - projectedCost;
-  const monthly = annualValue / 12;
-  const margin = annualValue ? profit / annualValue * 100 : 0;
-  return { rows, projectedCost, annualValue, profit, monthly, margin };
+  return {rows, projectedCost, annualValue, profit, monthly: annualValue / 12, margin: profit / annualValue * 100};
 }
 
-function setView(view){
+function enrichContract(contract) {
+  const calc = calculateAssets(contract.assets, contract.margin);
+  return {...contract, ...calc, endDate: endDate(contract.startDate, contract.term)};
+}
+
+function setView(view) {
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
-  document.querySelectorAll(".nav-link").forEach(b => b.classList.toggle("active", b.dataset.view === view));
+  document.querySelectorAll(".nav-link").forEach(b => b.classList.remove("active"));
   $(view).classList.add("active");
-  const titles = { dashboard:"Maintenance Proposal Platform", contracts:"Maintenance Contracts Generated", "new-contract":"New Contract Set Up", proposal:"Proposal Generator", settings:"Costing Rules" };
-  $("page-title").textContent = titles[view];
-  if(view === "proposal") renderProposal();
+  document.querySelector(`[data-view="${view}"]`).classList.add("active");
+  renderAll();
 }
 
-function renderDashboard(){
-  const calcs = contracts.map(c => ({ c, calc: calculateContract(c), expiry: endDate(c.startDate, c.term) }));
-  const active = calcs.filter(x=>x.c.status === "Active");
-  $("activeContracts").textContent = active.length;
-  $("totalValue").textContent = money(active.reduce((s,x)=>s+x.calc.annualValue,0));
-  $("mrr").textContent = money(active.reduce((s,x)=>s+x.calc.monthly,0));
-  $("pipelineValue").textContent = money(calcs.filter(x=>x.c.status !== "Active").reduce((s,x)=>s+x.calc.annualValue,0));
-  $("exp30").textContent = active.filter(x=>daysUntil(x.expiry) <= 30 && daysUntil(x.expiry) >= 0).length;
-  $("exp60").textContent = active.filter(x=>daysUntil(x.expiry) <= 60 && daysUntil(x.expiry) >= 0).length;
-  $("exp90").textContent = active.filter(x=>daysUntil(x.expiry) <= 90 && daysUntil(x.expiry) >= 0).length;
+document.querySelectorAll(".nav-link").forEach(btn => btn.addEventListener("click", () => setView(btn.dataset.view)));
 
-  const max = Math.max(...calcs.map(x=>x.calc.annualValue));
-  $("forecastBars").innerHTML = calcs.map(x => `<div class="bar-row"><span>${x.c.customerName}</span><div><i style="width:${Math.max(8, x.calc.annualValue/max*100)}%"></i></div><strong>${money(x.calc.annualValue)}</strong></div>`).join("");
-  $("attentionList").innerHTML = calcs.filter(x=>x.c.status !== "Active").map(x => `<button class="attention-card" onclick="openContract('${x.c.id}')"><strong>${x.c.customerName}</strong><span>${x.c.status} · ${money(x.calc.annualValue)} · ${pct(x.calc.margin)} margin</span></button>`).join("") || `<p class="muted">No outstanding contracts.</p>`;
+function dashboard() {
+  const active = contracts.filter(c => c.status === "Active");
+  const totalValue = active.reduce((s,c) => s + c.annualValue, 0);
+  const totalProfit = active.reduce((s,c) => s + c.profit, 0);
+  const expiry = (n) => contracts.filter(c => daysUntil(c.endDate) <= n && daysUntil(c.endDate) >= 0).length;
+  return `<div class="page-head"><div><span class="pill navy">INTERNAL DASHBOARD</span><h1>Maintenance Contract Dashboard</h1><p>Overview of active maintenance contracts, revenue, profit and expiry risk.</p></div><button class="primary" onclick="setView('new-contract')">Create New Contract</button></div>
+  <div class="kpi-grid">
+    ${kpi("Total active maintenance contracts", active.length)}
+    ${kpi("Total contracts value", money(totalValue))}
+    ${kpi("Monthly recurring revenue", money(totalValue/12))}
+    ${kpi("Projected gross profit", money(totalProfit))}
+    ${kpi("Expiring in 30 days", expiry(30), true)}
+    ${kpi("Expiring in 60 days", expiry(60), true)}
+    ${kpi("Expiring in 90 days", expiry(90), true)}
+    ${kpi("Proposal pipeline", money(contracts.filter(c=>c.status!=="Active").reduce((s,c)=>s+c.annualValue,0)))}
+  </div>
+  <div class="panel two-col"><div><h2>Contracts by status</h2>${statusBar("Active")} ${statusBar("Outstanding")} ${statusBar("Draft")}</div><div><h2>Recent generated contracts</h2>${contracts.map(c=>`<button class="contract-mini" onclick="selectContract('${c.id}')"><strong>${c.customerName}</strong><span>${money(c.annualValue)} · ${c.status}</span></button>`).join("")}</div></div>`;
 }
 
-function renderContracts(){
-  $("contractsTable").innerHTML = contracts.map(c => {
-    const calc = calculateContract(c); const expiry = endDate(c.startDate, c.term);
-    return `<tr><td><strong>${c.customerName}</strong><br><span>${c.siteAddress}</span></td><td><span class="status ${c.status.toLowerCase()}">${c.status}</span></td><td>${money(calc.annualValue)}</td><td>${money(calc.projectedCost)}</td><td>${money(calc.profit)}</td><td>${pct(calc.margin)}</td><td>${expiry.toLocaleDateString("en-AU")}</td><td><button class="ghost-btn small-btn" onclick="openContract('${c.id}')">Open</button></td></tr>`;
-  }).join("");
-  if(!currentContract) openContract(contracts[0].id, false);
+function kpi(label, value, accent=false) { return `<div class="kpi ${accent?'accent':''}"><span>${label}</span><strong>${value}</strong></div>`; }
+function statusBar(status) { const count = contracts.filter(c=>c.status===status).length; return `<div class="bar-row"><b>${status} ${count}</b><div class="bar"><span style="width:${Math.max(18,count*28)}%"></span></div></div>`; }
+function selectContract(id) { selectedContractId = id; setView("contracts"); }
+function selectedContract() { return contracts.find(c=>c.id===selectedContractId) || contracts[0]; }
+
+function contractsView() {
+  const c = selectedContract();
+  return `<div class="page-head"><div><span class="pill navy">INTERNAL REVIEW</span><h1>Maintenance Contracts Generated</h1><p>Review outstanding contracts, pricing, cost and margin before issue.</p></div><button class="primary" onclick="setView('proposal')">View Customer Proposal</button></div>
+  <div class="contract-layout"><div class="panel"><h2>Generated contracts</h2>${contracts.map(x=>`<button class="contract-row ${x.id===c.id?'selected':''}" onclick="selectContract('${x.id}')"><span><b>${x.customerName}</b><small>${x.id} · ${x.status}</small></span><strong>${money(x.annualValue)}</strong></button>`).join("")}</div>
+  <div class="panel"><h2>${c.customerName}</h2><p class="muted">${c.siteAddress}</p><div class="detail-grid">${kpi("Annual sell price", money(c.annualValue))}${kpi("Projected cost", money(c.projectedCost))}${kpi("Projected profit", money(c.profit))}${kpi("Gross margin", c.margin.toFixed(1)+"%")}</div><h3>Cost breakdown</h3><table><thead><tr><th>Asset</th><th>Qty</th><th>Visits</th><th>Labour</th><th>Materials</th><th>Cost</th></tr></thead><tbody>${c.rows.map(r=>`<tr><td>${r.type}</td><td>${r.quantity}</td><td>${r.visits}</td><td>${money(r.labour)}</td><td>${money(r.materials)}</td><td>${money(r.projectedCost)}</td></tr>`).join("")}</tbody></table></div></div>`;
 }
 
-function openContract(id, switchView=true){
-  currentContract = contracts.find(c => c.id === id);
-  const calc = calculateContract(currentContract);
-  $("contractDetail").innerHTML = `<div class="panel-head"><div><span class="section-chip">${currentContract.id}</span><h2>${currentContract.customerName}</h2><p class="muted">Internal cost and profitability breakdown.</p></div><button class="primary-btn" onclick="proposalMode='internal'; setView('proposal')">View Proposal</button></div>
-  <div class="kpi-grid mini"><div class="kpi"><span>Projected annual cost</span><strong>${money(calc.projectedCost)}</strong></div><div class="kpi"><span>Charge to customer</span><strong>${money(calc.annualValue)}</strong></div><div class="kpi"><span>Projected profit</span><strong>${money(calc.profit)}</strong></div><div class="kpi"><span>Gross margin</span><strong>${pct(calc.margin)}</strong></div></div>
-  <div class="table-wrap"><table><thead><tr><th>Asset</th><th>Qty</th><th>Visits</th><th>Labour</th><th>Materials</th><th>Overheads/Admin</th><th>Projected cost</th></tr></thead><tbody>${calc.rows.map(r=>`<tr><td>${r.type}<br><span>${r.location}</span></td><td>${r.quantity}</td><td>${r.visits}</td><td>${money(r.labour)}</td><td>${money(r.materials)}</td><td>${money(r.overhead + r.admin + r.contingency)}</td><td>${money(r.projectedCost)}</td></tr>`).join("")}</tbody></table></div>`;
-  if(switchView) setView("contracts");
+function newContractView() {
+  return `<div class="page-head"><div><span class="pill navy">NEW PROPOSAL</span><h1>New Contract Set Up</h1><p>Enter customer details and upload an asset list. This prototype uses fake Paramount costing rules.</p></div></div>
+  <div class="form-panel"><div class="form-grid">
+    <label>Customer name<input id="fCustomer" value="Metro Health Precinct"></label><label>Site address<input id="fAddress" value="250 Collins Street, Melbourne VIC"></label><label>Contact person<input id="fContact" value="Property Manager"></label><label>Email<input id="fEmail" value="property@metrohealth.com.au"></label><label>Phone<input id="fPhone" value="03 8888 5555"></label><label>Start date<input id="fStart" type="date" value="2026-08-01"></label><label>Term months<input id="fTerm" type="number" value="12"></label><label>Target margin %<input id="fMargin" type="number" value="38"></label><label>Status<select id="fStatus"><option>Draft</option><option>Outstanding</option><option>Active</option></select></label>
+  </div><h2>Uploads</h2><div class="upload-grid"><div class="upload-box"><b>Upload asset list CSV</b><input id="assetUpload" type="file" accept=".csv,.json"><small>CSV columns: type, quantity, frequency. Upload works in browser for this demo.</small></div><div class="upload-box"><b>Upload customer documents</b><input type="file" multiple><small>Stored visually only in this static prototype.</small></div></div>
+  <h2>Asset list</h2><div id="assetEditor"></div><button class="secondary" onclick="addAssetRow()">Add asset row</button><button class="primary" onclick="generateContract()">Generate Paramount Proposal</button></div>`;
 }
 
-function renderAssetDraft(){
-  $("draftAssets").innerHTML = draftAssets.map((a,i)=>`<tr><td>${a.type}</td><td>${a.quantity}</td><td>${a.frequency}</td><td>${a.location}</td><td><button class="ghost-btn small-btn" onclick="removeDraftAsset(${i})">Remove</button></td></tr>`).join("");
-}
-function removeDraftAsset(i){ draftAssets.splice(i,1); renderAssetDraft(); }
+let draftAssets = [{type:"Chiller", quantity:1, frequency:"Monthly"},{type:"Air Handling Unit", quantity:12, frequency:"Quarterly"},{type:"Exhaust Fan", quantity:15, frequency:"Six Monthly"}];
+function renderAssetEditor() { const el = $("assetEditor"); if(!el) return; el.innerHTML = draftAssets.map((a,i)=>`<div class="asset-edit"><select onchange="draftAssets[${i}].type=this.value">${Object.keys(COSTING_RULES).map(t=>`<option ${t===a.type?'selected':''}>${t}</option>`).join("")}</select><input type="number" value="${a.quantity}" onchange="draftAssets[${i}].quantity=this.value"><select onchange="draftAssets[${i}].frequency=this.value"><option ${a.frequency==='Monthly'?'selected':''}>Monthly</option><option ${a.frequency==='Quarterly'?'selected':''}>Quarterly</option><option ${a.frequency==='Six Monthly'?'selected':''}>Six Monthly</option><option ${a.frequency==='Annual'?'selected':''}>Annual</option></select></div>`).join(""); }
+function addAssetRow(){ draftAssets.push({type:"Split System", quantity:1, frequency:"Quarterly"}); renderAssetEditor(); }
+function generateContract(){ const contract = enrichContract({id:`PMA-${26000+contracts.length+1}`, customerName:$("fCustomer").value, siteAddress:$("fAddress").value, contactPerson:$("fContact").value, email:$("fEmail").value, phone:$("fPhone").value, startDate:$("fStart").value, term:Number($("fTerm").value), margin:Number($("fMargin").value), status:$("fStatus").value, assets: draftAssets.map(a=>({...a}))}); contracts.unshift(contract); selectedContractId = contract.id; setView("proposal"); }
 
-function createContractFromForm(){
-  const c = { id: `PMA-${26000 + contracts.length + 1}`, customerName: $("customerName").value, siteAddress: $("siteAddress").value, contactPerson: $("contactPerson").value, email: $("email").value, phone: $("phone").value, startDate: $("startDate").value, term: Number($("term").value), targetMargin: Number($("targetMargin").value), status: "Draft", assets: structuredClone(draftAssets) };
-  contracts.unshift(c); currentContract = c; proposalMode = "customer"; renderAll(); setView("proposal");
-}
+function settingsView(){ return `<div class="page-head"><div><span class="pill navy">PRICING ENGINE</span><h1>Costing Rules</h1><p>Prototype rates used to calculate labour, materials, overhead and target margin.</p></div></div><div class="panel"><table><thead><tr><th>Asset type</th><th>Labour hrs / visit</th><th>Default visits</th><th>Materials / visit</th></tr></thead><tbody>${Object.entries(COSTING_RULES).map(([k,v])=>`<tr><td>${k}</td><td>${v.labourHours}</td><td>${v.visits}</td><td>${money(v.baseMaterials)}</td></tr>`).join("")}</tbody></table><p class="muted">Labour rate ${money(LABOUR_RATE)}/hr · Vehicle ${money(VEHICLE_RATE)}/visit · Admin ${ADMIN_PERCENT*100}% · Overhead ${OVERHEAD_PERCENT*100}%</p></div>`; }
 
-function renderProposal(){
-  const c = currentContract || contracts[0]; currentContract = c;
-  const calc = calculateContract(c);
-  const highRisk = calc.rows.filter(r=>r.risk === "High");
-  const months = serviceCalendar(calc.rows);
-  const internal = proposalMode === "internal";
-  $("proposalOutput").innerHTML = `
-  <article class="proposal-page cover"><div class="proposal-brand"><div class="logo-mark">P</div><div><strong>Paramount Airconditioning</strong><span>Comfort Engineered for Australia</span></div></div><div class="cover-title"><span class="section-chip">Prepared for</span><h1>Preventative Maintenance Proposal</h1><h2>${c.customerName}</h2><p>${c.siteAddress}</p></div><div class="cover-summary"><div><span>Annual value</span><strong>${money(calc.annualValue)}</strong></div><div><span>Term</span><strong>${c.term} months</strong></div><div><span>Prepared</span><strong>${today().toLocaleDateString("en-AU")}</strong></div></div></article>
-  ${internal ? internalPage(c, calc) : ""}
-  <article class="proposal-page"><span class="section-chip">01</span><h1>Executive summary</h1><p>Paramount Airconditioning proposes a structured preventative maintenance program for ${c.customerName}. The program is designed to maintain asset reliability, support efficient operation and reduce the risk of unplanned failure across critical heating, cooling and air-quality systems.</p><p>The proposed maintenance schedule covers ${c.assets.reduce((s,a)=>s+a.quantity,0)} listed assets across ${[...new Set(c.assets.map(a=>a.type))].length} asset categories. Service frequencies have been allocated based on equipment type, operating impact and practical site attendance requirements.</p></article>
-  <article class="proposal-page"><span class="section-chip">02</span><h1>Why Paramount</h1><div class="feature-grid"><div><strong>Commercial HVAC focus</strong><p>Maintenance planning for commercial, industrial and technical environments.</p></div><div><strong>Practical reporting</strong><p>Clear service reports that identify work completed, defects and recommended actions.</p></div><div><strong>Structured delivery</strong><p>Routine visits planned against the asset schedule and site requirements.</p></div><div><strong>Risk-led maintenance</strong><p>Priority attention for chillers, cooling towers, controls and other higher-impact systems.</p></div></div></article>
-  <article class="proposal-page"><span class="section-chip">03</span><h1>Asset schedule</h1>${assetSchedule(calc.rows)}</article>
-  <article class="proposal-page"><span class="section-chip">04</span><h1>Maintenance methodology</h1>${methodology(calc.rows)}</article>
-  <article class="proposal-page"><span class="section-chip">05</span><h1>Annual service calendar</h1><div class="calendar-grid">${months.map(m=>`<div><strong>${m.month}</strong><p>${m.items.join("<br>") || "No scheduled routine visit"}</p></div>`).join("")}</div></article>
-  <article class="proposal-page"><span class="section-chip">06</span><h1>Risk assessment</h1><p>The following assets have been identified as higher operational impact items due to equipment type or site function.</p>${highRisk.length ? assetSchedule(highRisk) : `<p>No high-risk assets identified in this uploaded register.</p>`}<p>Where defects are identified during routine maintenance, Paramount will provide recommendations and separate quotations for corrective works.</p></article>
-  <article class="proposal-page"><span class="section-chip">07</span><h1>Commercial summary</h1><table><tbody><tr><th>Preventative maintenance annual value</th><td>${money(calc.annualValue)} + GST</td></tr><tr><th>Monthly recurring value</th><td>${money(calc.monthly)} + GST</td></tr><tr><th>Contract term</th><td>${c.term} months</td></tr><tr><th>Commencement date</th><td>${new Date(c.startDate).toLocaleDateString("en-AU")}</td></tr></tbody></table><p class="muted">Reactive works, quoted repairs and after-hours attendance are excluded unless agreed in writing.</p></article>
-  <article class="proposal-page"><span class="section-chip">08</span><h1>Acceptance</h1><p>By signing below, both parties acknowledge acceptance of the preventative maintenance proposal and associated commercial summary.</p><div class="signature-grid"><div><h3>Client acceptance</h3><p>Name: _________________________</p><p>Position: ______________________</p><p>Signature: _____________________</p><p>Date: __________________________</p></div><div><h3>Paramount Airconditioning</h3><p>Name: _________________________</p><p>Position: ______________________</p><p>Signature: _____________________</p><p>Date: __________________________</p></div></div></article>`;
-}
+function proposalView(){ const c=selectedContract(); return `<div class="page-head no-print"><div><span class="pill navy">CUSTOMER OUTPUT</span><h1>Proposal Preview</h1><p>This is the client-facing proposal. Use the button below to save this as PDF.</p></div><div><button class="secondary" onclick="downloadProposal()">Download HTML</button><button class="primary" onclick="printProposal()">Print / Save as PDF</button></div></div>${proposalDocument(c)}`; }
 
-function internalPage(c, calc){
-  return `<article class="proposal-page internal"><span class="section-chip">Internal only</span><h1>Profitability review</h1><div class="kpi-grid mini"><div class="kpi"><span>Projected cost</span><strong>${money(calc.projectedCost)}</strong></div><div class="kpi"><span>Sell price</span><strong>${money(calc.annualValue)}</strong></div><div class="kpi"><span>Profit</span><strong>${money(calc.profit)}</strong></div><div class="kpi"><span>Margin</span><strong>${pct(calc.margin)}</strong></div></div>${assetSchedule(calc.rows, true)}</article>`;
-}
+function proposalDocument(c){ return `<article class="proposal-doc" id="proposalDoc">
+<section class="proposal-page cover"><div class="proposal-top"><div><div class="proposal-logo"><span>P</span><b>Paramount</b></div><p>Comfort Engineered for Australia</p></div><div class="proposal-ref">${c.id}</div></div><div class="cover-title"><span class="pill orange">PREVENTATIVE MAINTENANCE PROPOSAL</span><h1>${c.customerName}</h1><p>${c.siteAddress}</p></div><div class="cover-summary"><div><span>Annual contract value</span><strong>${money(c.annualValue)}</strong></div><div><span>Contract term</span><strong>${c.term} months</strong></div><div><span>Prepared date</span><strong>24 June 2026</strong></div></div></section>
+<section class="proposal-page"><h1>Executive Summary</h1><p>Paramount Airconditioning has prepared a preventative maintenance program for ${c.customerName}. The program is designed to maintain HVAC reliability, support asset life and reduce the likelihood of unplanned equipment downtime.</p><p>The proposed service schedule covers ${assetSentence(c.assets)}. Maintenance will be completed by qualified technicians and documented through service reports following each attendance.</p><div class="proposal-card-grid"><div><span>Total maintained assets</span><strong>${c.assets.reduce((s,a)=>s+Number(a.quantity),0)}</strong></div><div><span>Annual service visits</span><strong>${c.rows.reduce((s,r)=>s+r.visits,0)}</strong></div><div><span>Monthly equivalent</span><strong>${money(c.monthly)}</strong></div></div></section>
+<section class="proposal-page"><h1>Asset Schedule</h1><table><thead><tr><th>Asset Type</th><th>Quantity</th><th>Frequency</th><th>Annual Visits</th></tr></thead><tbody>${c.rows.map(r=>`<tr><td>${r.type}</td><td>${r.quantity}</td><td>${r.frequency}</td><td>${r.visits}</td></tr>`).join("")}</tbody></table><p class="muted">A detailed equipment schedule may be attached as Appendix A where manufacturer, model, serial number and location details are available.</p></section>
+<section class="proposal-page"><h1>Maintenance Methodology</h1>${c.assets.map(a=>methodBlock(a)).join("")}</section>
+<section class="proposal-page"><h1>Annual Service Calendar</h1><p>The maintenance program is structured to provide regular attendance throughout the contract term.</p>${calendar(c)}</section>
+<section class="proposal-page"><h1>Commercial Summary</h1><table><tbody><tr><th>Client</th><td>${c.customerName}</td></tr><tr><th>Site</th><td>${c.siteAddress}</td></tr><tr><th>Contract term</th><td>${c.term} months</td></tr><tr><th>Annual preventative maintenance value</th><td><strong>${money(c.annualValue)} + GST</strong></td></tr><tr><th>Monthly equivalent</th><td>${money(c.monthly)} + GST</td></tr></tbody></table><p>This proposal is based on the supplied asset schedule and excludes major repairs, replacement works, after-hours attendance and works outside the agreed preventative maintenance scope unless stated otherwise.</p></section>
+<section class="proposal-page acceptance"><h1>Acceptance</h1><p>By signing below, the client confirms acceptance of this preventative maintenance proposal.</p><div class="sign-grid"><div><b>Client acceptance</b><span>Name</span><span>Position</span><span>Signature</span><span>Date</span></div><div><b>Paramount Airconditioning</b><span>Name</span><span>Position</span><span>Signature</span><span>Date</span></div></div><footer>Paramount Airconditioning (Aust) Pty Ltd · 39–41 Geddes Street, Mulgrave VIC 3170 · paramountair.com.au</footer></section>
+</article>`; }
 
-function assetSchedule(rows, costs=false){
-  return `<table><thead><tr><th>Asset type</th><th>Qty</th><th>Frequency</th><th>Location</th><th>Risk</th>${costs?"<th>Projected cost</th>":""}</tr></thead><tbody>${rows.map(r=>`<tr><td>${r.type}</td><td>${r.quantity}</td><td>${r.frequency}</td><td>${r.location}</td><td>${r.risk || "Standard"}</td>${costs?`<td>${money(r.projectedCost)}</td>`:""}</tr>`).join("")}</tbody></table>`;
-}
+function assetSentence(assets){ return assets.map(a=>`${a.quantity} ${a.type}${Number(a.quantity)>1?'s':''}`).join(", "); }
+function methodBlock(a){ const rule=COSTING_RULES[a.type] || COSTING_RULES["Split System"]; return `<div class="method"><h2>${a.type}</h2><p>${a.frequency} preventative maintenance for ${a.quantity} asset${Number(a.quantity)>1?'s':''}, including:</p><ul>${rule.scope.map(s=>`<li>${s}</li>`).join("")}</ul></div>`; }
+function calendar(c){ const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]; return `<div class="service-calendar">${months.map((m,i)=>`<div><b>${m}</b><span>${c.rows.filter(r => (r.frequency.includes('Monthly')) || (r.frequency.includes('Quarterly') && i%3===0) || (r.frequency.includes('Six') && i%6===0) || (r.frequency.includes('Annual') && i===0)).map(r=>r.type).join('<br>') || '—'}</span></div>`).join("")}</div>`; }
 
-function methodology(rows){
-  const types = [...new Set(rows.map(r=>r.type))];
-  const copy = {
-    "Chiller":["Inspect compressor operation and safety controls.","Check operating pressures and temperatures.","Review condenser condition and refrigerant circuit performance."],
-    "Cooling Tower":["Inspect fan assembly, drift eliminators and water distribution.","Review basin condition and access requirements.","Check operation for signs of vibration, noise or fouling."],
-    "Air Handling Unit":["Inspect filters, coils, fan assemblies and drive components.","Check motor operation and electrical components.","Review condensate drain and general casing condition."],
-    "Package Unit":["Check refrigeration operation, electrical controls and airflow.","Inspect condenser and evaporator coil condition.","Confirm thermostat and safety device operation."],
-    "Split System":["Inspect indoor and outdoor unit condition.","Check drain operation, filters and general performance.","Verify controller operation and operating temperatures."],
-    "Exhaust Fan":["Inspect fan operation, fixings and electrical controls.","Check noise, vibration and general condition.","Report visible access or airflow issues."],
-    "BMS / Controls":["Review controller operation, alarms and schedules.","Check sensor readings and control sequencing.","Report abnormal trends or operational issues."]
-  };
-  return types.map(t=>`<div class="method"><h3>${t}</h3><ul>${(copy[t] || ["Inspect operation and report condition.","Verify controls and service access.","Identify defects and recommended corrective works."]).map(i=>`<li>${i}</li>`).join("")}</ul></div>`).join("");
-}
+function printProposal(){ window.print(); }
+function downloadProposal(){ const html = `<!doctype html><html><head><meta charset="UTF-8"><title>${selectedContract().customerName} Proposal</title><link rel="stylesheet" href="styles.css"></head><body>${proposalDocument(selectedContract())}</body></html>`; const blob=new Blob([html],{type:"text/html"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`${selectedContract().customerName.replaceAll(' ','-')}-Maintenance-Proposal.html`; a.click(); }
 
-function serviceCalendar(rows){
-  const names = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  return names.map((m,idx)=>({ month:m, items: rows.filter(r => r.visits === 12 || (r.visits === 4 && [0,3,6,9].includes(idx)) || (r.visits === 2 && [0,6].includes(idx)) || (r.visits === 1 && idx===0)).map(r=>`${r.type} × ${r.quantity}`) }));
-}
-
-function renderRules(){
-  $("assetType").innerHTML = Object.keys(COSTING_RULES).map(t=>`<option>${t}</option>`).join("");
-  $("rulesGrid").innerHTML = Object.entries(COSTING_RULES).map(([k,r])=>`<div class="rule-card"><h3>${k}</h3><p><strong>${r.labourHours}</strong> hrs / visit</p><p><strong>${r.visits}</strong> default visits</p><p><strong>${money(r.materials)}</strong> materials / visit</p><p><span class="status ${r.risk.toLowerCase()}">${r.risk} risk</span></p></div>`).join("");
-}
-
-function parseCSV(text){
-  const lines = text.trim().split(/\r?\n/); const headers = lines.shift().split(',').map(h=>h.trim());
-  return lines.map(line=>{ const cells = line.split(',').map(c=>c.trim()); return Object.fromEntries(headers.map((h,i)=>[h,cells[i] || ""])); });
-}
-function readFile(file, cb){ const reader = new FileReader(); reader.onload = e => cb(e.target.result); reader.readAsText(file); }
-function downloadCSV(name, rows){
-  const headers = Object.keys(rows[0]); const body = [headers.join(','), ...rows.map(r=>headers.map(h=>r[h]).join(','))].join('\n');
-  downloadFile(name, body, 'text/csv');
-}
-function downloadFile(name, content, type){ const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([content], {type})); a.download = name; a.click(); URL.revokeObjectURL(a.href); }
-function downloadProposal(){ downloadFile(`${(currentContract.customerName||'proposal').replaceAll(' ','-')}-proposal.html`, `<!doctype html><html><head><meta charset="utf-8"><title>${currentContract.customerName}</title><link rel="stylesheet" href="styles.css"></head><body>${$("proposalOutput").outerHTML}</body></html>`, 'text/html'); }
-
-function renderAll(){ renderDashboard(); renderContracts(); renderAssetDraft(); renderRules(); }
-
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('[data-view], [data-view-button]').forEach(el => el.addEventListener('click', () => setView(el.dataset.view || el.dataset.viewButton)));
-  $('loadSampleBtn').onclick = () => { contracts = structuredClone(SAMPLE_CONTRACTS); currentContract = contracts[0]; renderAll(); };
-  $('addAssetBtn').onclick = () => { draftAssets.push(asset($('assetType').value, $('assetQty').value, $('assetFreq').value, $('assetLocation').value)); renderAssetDraft(); };
-  $('generateContractBtn').onclick = createContractFromForm;
-  $('showInternalBtn').onclick = () => { proposalMode = 'internal'; renderProposal(); };
-  $('showCustomerBtn').onclick = () => { proposalMode = 'customer'; renderProposal(); };
-  $('printBtn').onclick = () => window.print();
-  $('downloadHtmlBtn').onclick = downloadProposal;
-  $('downloadCustomerTemplate').onclick = () => downloadCSV('Paramount_Customer_Template.csv', [{"Customer Name":"Southbank Data Hall","Site Address":"81 Riverside Drive Southbank VIC","Contact Person":"Operations Lead","Email":"ops@example.com","Phone":"03 9000 1111","Contract Term Months":"36","Target Margin %":"38"}]);
-  $('downloadAssetTemplate').onclick = () => downloadCSV('Paramount_Asset_Template.csv', [{"Asset Type":"Chiller","Quantity":"2","Frequency":"Quarterly","Location":"Roof Plantroom"},{"Asset Type":"Air Handling Unit","Quantity":"8","Frequency":"Quarterly","Location":"Levels 1-4"}]);
-  $('customerFile').onchange = e => readFile(e.target.files[0], text => { const r = parseCSV(text)[0]; if(!r) return; $('customerName').value = r['Customer Name'] || r.customerName || ''; $('siteAddress').value = r['Site Address'] || ''; $('contactPerson').value = r['Contact Person'] || ''; $('email').value = r.Email || ''; $('phone').value = r.Phone || ''; $('term').value = r['Contract Term Months'] || r['Contract Term (Months)'] || 12; $('targetMargin').value = r['Target Margin %'] || 35; });
-  $('assetFile').onchange = e => readFile(e.target.files[0], text => { draftAssets = parseCSV(text).map(r => asset(r['Asset Type'], r.Quantity || r.Qty || 1, r.Frequency || 'Quarterly', r.Location || 'Site')); renderAssetDraft(); });
-  currentContract = contracts[0]; renderAll();
-});
+function renderAll(){ $("dashboard").innerHTML=dashboard(); $("contracts").innerHTML=contractsView(); $("new-contract").innerHTML=newContractView(); $("proposal").innerHTML=proposalView(); $("settings").innerHTML=settingsView(); renderAssetEditor(); }
+renderAll();
