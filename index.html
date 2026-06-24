@@ -1,17 +1,158 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Paramount Maintenance Contracts</title>
-<style>
-:root{--navy:#0E2A47;--orange:#E87722;--steel:#2C5F7C;--sand:#EFE9DD;--light:#F4F4F4;--grey:#6B6F73;--white:#fff}*{box-sizing:border-box}body{margin:0;font-family:Calibri,Arial,sans-serif;background:var(--sand);color:var(--navy)}.app{display:flex;min-height:100vh}.sidebar{width:292px;background:var(--navy);color:var(--white);padding:28px 22px;position:fixed;inset:0 auto 0 0}.brand{display:flex;gap:14px;align-items:center;margin-bottom:36px}.mark{width:48px;height:48px;border-radius:14px;background:var(--orange);display:grid;place-items:center;font-family:Georgia,serif;font-size:30px}.brand h1{font-family:Georgia,serif;font-weight:400;margin:0;font-size:28px}.brand p{margin:3px 0 0;color:var(--sand);font-size:13px}.nav button{width:100%;border:0;background:transparent;color:var(--sand);text-align:left;padding:14px 15px;border-radius:14px;margin-bottom:9px;font-weight:700;cursor:pointer}.nav button.active,.nav button:hover{background:var(--sand);color:var(--navy)}.sidefoot{position:absolute;left:22px;right:22px;bottom:24px;color:var(--sand);font-size:13px;border-top:1px solid rgba(255,255,255,.18);padding-top:18px}.main{margin-left:292px;width:calc(100% - 292px);padding:34px}.view{display:none}.view.active{display:block}.heading{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:22px}.eyebrow{display:inline-block;background:var(--navy);color:var(--sand);border-radius:999px;padding:7px 13px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}.heading h2{font-family:Georgia,serif;font-weight:400;font-size:42px;margin:12px 0 6px}.heading p{margin:0;color:var(--grey);font-size:17px}.btn{border:0;border-radius:15px;background:var(--orange);color:var(--navy);font-weight:800;padding:13px 18px;cursor:pointer}.btn.secondary{background:var(--navy);color:white}.grid{display:grid;grid-template-columns:repeat(3,minmax(180px,1fr));gap:16px}.card,.panel{background:white;border-radius:24px;padding:22px;box-shadow:0 16px 38px rgba(14,42,71,.08)}.card span{display:block;color:var(--grey);font-size:14px}.card strong{display:block;font-family:Georgia,serif;font-weight:400;font-size:36px;margin-top:8px}.card.warning{border-left:7px solid var(--orange)}.panel{margin-top:18px}.two{display:grid;grid-template-columns:1fr 1fr;gap:20px}.panel h3{font-family:Georgia,serif;font-weight:400;font-size:28px;margin:0 0 16px}table{width:100%;border-collapse:collapse}th{text-align:left;background:var(--navy);color:white;padding:12px;font-size:13px}td{padding:13px 12px;border-bottom:1px solid #e8e3d7}tr:hover td{background:#fbfaf7}.status{display:inline-block;border-radius:999px;padding:5px 10px;background:var(--light);font-weight:700}.bar{margin-bottom:12px}.track{height:12px;background:var(--light);border-radius:99px;overflow:hidden}.fill{height:100%;background:var(--orange);border-radius:99px}.split{display:grid;grid-template-columns:1.15fr .85fr;gap:18px}.formgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}label{font-weight:700;font-size:13px}input,select,textarea{width:100%;margin-top:6px;border:1px solid #d9d3c8;border-radius:13px;padding:12px;font:inherit}textarea{min-height:92px}.upload{border:2px dashed #d8cdbb;border-radius:18px;padding:16px;background:#fbfaf7}.asset-row{display:grid;grid-template-columns:1.3fr .5fr 1fr auto;gap:10px;align-items:end;margin-bottom:10px}.detail{background:#fbfaf7;border-radius:20px;padding:18px;margin-top:18px}.contract{background:white;color:#111;padding:35px;border-radius:14px;border:1px solid #ddd;max-height:720px;overflow:auto}.contract h1,.contract h2{font-family:Georgia,serif;font-weight:400;color:var(--navy)}.contract .top{border-bottom:3px solid var(--navy);padding-bottom:16px;margin-bottom:20px}.contract .tag{color:var(--orange);font-weight:700}.contract table{margin:14px 0}.contract th{background:var(--navy);color:white}.contract td,.contract th{border:1px solid #ddd;padding:8px}.muted{color:var(--grey)}.hidden{display:none}@media(max-width:900px){.sidebar{position:relative;width:100%;min-height:auto}.app{display:block}.main{margin:0;width:100%;padding:18px}.grid,.two,.split,.formgrid{grid-template-columns:1fr}.sidefoot{position:static;margin-top:20px}.asset-row{grid-template-columns:1fr}}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paramount Maintenance Contracts</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-<div class="app"><aside class="sidebar"><div class="brand"><div class="mark">P</div><div><h1>Paramount</h1><p>Maintenance Contracts</p></div></div><div class="nav"><button class="active" data-view="dashboard">Dashboard</button><button data-view="contracts">Maintenance Contracts Generated</button><button data-view="new">New Contract Set Up</button></div><div class="sidefoot"><strong>Comfort Engineered</strong><br>Commercial · Industrial · Data Centres<br><br>Internal test site</div></aside><main class="main"><section id="dashboard" class="view active"><div class="heading"><div><span class="eyebrow">Internal dashboard</span><h2>Maintenance Contract Dashboard</h2><p>Overview of active maintenance contracts, revenue and expiry risk.</p></div><button class="btn" onclick="showView('new')">Create New Contract</button></div><div class="grid"><div class="card"><span>Total active maintenance contracts</span><strong id="activeCount">0</strong></div><div class="card"><span>Total contracts value</span><strong id="totalValue">$0</strong></div><div class="card"><span>Monthly recurring revenue</span><strong id="mrr">$0</strong></div><div class="card warning"><span>Expiring in 30 days</span><strong id="exp30">0</strong></div><div class="card warning"><span>Expiring in 60 days</span><strong id="exp60">0</strong></div><div class="card warning"><span>Expiring in 90 days</span><strong id="exp90">0</strong></div></div><div class="panel two"><div><h3>Contracts by status</h3><div id="statusBars"></div></div><div><h3>Recent generated contracts</h3><div id="recent"></div></div></div></section><section id="contracts" class="view"><div class="heading"><div><span class="eyebrow">Generated contracts</span><h2>Maintenance Contracts Generated</h2><p>Click a contract to view cost, charge-out value and projected profit.</p></div></div><div class="panel"><table><thead><tr><th>Customer</th><th>Status</th><th>Annual Value</th><th>Projected Cost</th><th>Profit</th><th>Margin</th><th></th></tr></thead><tbody id="contractRows"></tbody></table><div id="detail" class="detail hidden"></div></div></section><section id="new" class="view"><div class="heading"><div><span class="eyebrow">New contract setup</span><h2>Create Maintenance Contract</h2><p>Upload customer documents and an asset list, enter the target margin, then generate a branded contract.</p></div></div><div class="split"><div class="panel"><h3>Customer details</h3><div class="formgrid"><div><label>Customer name<input id="customerName" value="Example Commercial Site"></label></div><div><label>Contact person<input id="contactPerson" value="Facilities Manager"></label></div><div><label>Email<input id="email" value="facilities@example.com"></label></div><div><label>Phone<input id="phone" value="03 9561 3333"></label></div><div style="grid-column:1/-1"><label>Site address<input id="siteAddress" value="39–41 Geddes Street, Mulgrave VIC 3170"></label></div><div><label>Start date<input id="startDate" type="date" value="2026-07-01"></label></div><div><label>Term months<input id="term" type="number" value="12"></label></div><div><label>Target margin %<input id="margin" type="number" value="35"></label></div><div><label>Status<select id="status"><option>Outstanding</option><option>Draft</option><option>Active</option></select></label></div></div><h3 style="margin-top:24px">Uploads</h3><div class="upload"><label>Upload asset list CSV/JSON<input id="assetUpload" type="file" accept=".csv,.json"></label><p class="muted">CSV columns: type, quantity, frequency. Upload works in the browser for this test site.</p></div><div class="upload" style="margin-top:12px"><label>Upload customer documents<input id="docUpload" type="file" multiple></label><p id="docList" class="muted">No documents uploaded.</p></div><h3 style="margin-top:24px">Asset list</h3><div id="assets"></div><button class="btn secondary" onclick="addAsset()">Add Asset</button> <button class="btn" onclick="generateContract()">Generate Contract</button></div><div class="panel"><h3>Generated contract preview</h3><div id="preview" class="contract"><p class="muted">Complete the form and select Generate Contract.</p></div><br><button class="btn secondary" onclick="window.print()">Print / Save as PDF</button> <button class="btn" onclick="downloadContract()">Download Contract HTML</button></div></div></section></main></div>
-<script>
-const COSTING={"Split System":{h:1.25,v:4,m:18},"Package Unit":{h:2.5,v:4,m:55},"Air Handling Unit":{h:2.75,v:4,m:70},"Chiller":{h:5.5,v:4,m:155},"Cooling Tower":{h:3.75,v:12,m:120},"Exhaust Fan":{h:.85,v:2,m:12},"BMS / Controls":{h:2,v:4,m:35}};const RATE=118,OH=.18,CONT=.08;let generatedHTML='';let contracts=[];function asset(type,qty,freq){return{type,qty:Number(qty),freq}}function visits(freq,fallback){let f=String(freq||'').toLowerCase();if(f.includes('month'))return 12;if(f.includes('six'))return 2;if(f.includes('quarter'))return 4;return fallback||4}function calc(assets,margin){let rows=assets.map(a=>{let r=COSTING[a.type]||COSTING['Split System'];let v=visits(a.freq,r.v),lab=a.qty*r.h*v*RATE,mat=a.qty*r.m*v,direct=lab+mat,over=direct*OH,cont=direct*CONT,cost=direct+over+cont;return{...a,v,lab,mat,over,cont,cost}});let cost=rows.reduce((s,r)=>s+r.cost,0);let annual=cost/(1-margin/100);return{rows,cost,annual,monthly:annual/12,profit:annual-cost,margin:(annual-cost)/annual*100}}function makeContract(info,assets){let c=calc(assets,Number(info.margin));return{id:Date.now()+Math.random(),...info,assets,...c,endDate:endDate(info.startDate,info.term)}}function endDate(s,t){let d=new Date(s);d.setMonth(d.getMonth()+Number(t||12));return d.toISOString().slice(0,10)}function money(n){return Number(n).toLocaleString('en-AU',{style:'currency',currency:'AUD',maximumFractionDigits:0})}contracts=[makeContract({customerName:'Southbank Data Hall',siteAddress:'81 Riverside Drive, Southbank VIC',contactPerson:'Operations Lead',email:'ops@example.com',phone:'03 9000 1111',startDate:'2026-07-01',term:12,margin:38,status:'Active'},[asset('Chiller',2,'Quarterly'),asset('Air Handling Unit',8,'Quarterly'),asset('BMS / Controls',1,'Quarterly')]),makeContract({customerName:'Mulgrave Business Park',siteAddress:'39 Geddes Street, Mulgrave VIC',contactPerson:'Facilities',email:'facilities@example.com',phone:'03 9561 3333',startDate:'2026-06-15',term:12,margin:35,status:'Outstanding'},[asset('Package Unit',6,'Quarterly'),asset('Exhaust Fan',10,'Six Monthly')]),makeContract({customerName:'Alexandria Logistics',siteAddress:'34 Ralph Street, Alexandria NSW',contactPerson:'Site Manager',email:'site@example.com',phone:'02 8271 0822',startDate:'2026-05-01',term:12,margin:32,status:'Draft'},[asset('Split System',18,'Quarterly'),asset('Air Handling Unit',2,'Quarterly')])];function showView(id){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===id))}document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>showView(b.dataset.view));function render(){let active=contracts.filter(c=>c.status==='Active');document.getElementById('activeCount').textContent=active.length;document.getElementById('totalValue').textContent=money(active.reduce((s,c)=>s+c.annual,0));document.getElementById('mrr').textContent=money(active.reduce((s,c)=>s+c.monthly,0));let now=new Date('2026-06-24');[30,60,90].forEach(n=>document.getElementById('exp'+n).textContent=contracts.filter(c=>{let d=(new Date(c.endDate)-now)/86400000;return d>0&&d<=n}).length);let max=contracts.length;document.getElementById('statusBars').innerHTML=['Active','Outstanding','Draft'].map(st=>{let n=contracts.filter(c=>c.status===st).length;return `<div class="bar"><b>${st}</b> ${n}<div class="track"><div class="fill" style="width:${n/max*100}%"></div></div></div>`}).join('');document.getElementById('recent').innerHTML=contracts.slice(-4).reverse().map(c=>`<p><b>${c.customerName}</b><br><span class="muted">${money(c.annual)} · ${c.status}</span></p>`).join('');document.getElementById('contractRows').innerHTML=contracts.map((c,i)=>`<tr><td>${c.customerName}<br><span class="muted">${c.siteAddress}</span></td><td><span class="status">${c.status}</span></td><td>${money(c.annual)}</td><td>${money(c.cost)}</td><td>${money(c.profit)}</td><td>${c.margin.toFixed(1)}%</td><td><button class="btn secondary" onclick="details(${i})">View</button></td></tr>`).join('')}function details(i){let c=contracts[i];document.getElementById('detail').classList.remove('hidden');document.getElementById('detail').innerHTML=`<h3>${c.customerName}</h3><p><b>Projected cost:</b> ${money(c.cost)} &nbsp; <b>Charge:</b> ${money(c.annual)} &nbsp; <b>Profit:</b> ${money(c.profit)}</p><table><tr><th>Asset</th><th>Qty</th><th>Visits</th><th>Labour</th><th>Materials</th><th>Total cost</th></tr>${c.rows.map(r=>`<tr><td>${r.type}</td><td>${r.qty}</td><td>${r.v}</td><td>${money(r.lab)}</td><td>${money(r.mat)}</td><td>${money(r.cost)}</td></tr>`).join('')}</table>`}function addAsset(type='Package Unit',qty=1,freq='Quarterly'){let d=document.createElement('div');d.className='asset-row';d.innerHTML=`<select class="atype">${Object.keys(COSTING).map(x=>`<option ${x===type?'selected':''}>${x}</option>`).join('')}</select><input class="aqty" type="number" value="${qty}"><select class="afreq"><option ${freq==='Monthly'?'selected':''}>Monthly</option><option ${freq==='Quarterly'?'selected':''}>Quarterly</option><option ${freq==='Six Monthly'?'selected':''}>Six Monthly</option></select><button class="btn secondary" onclick="this.parentElement.remove()">Remove</button>`;document.getElementById('assets').appendChild(d)}function currentAssets(){return[...document.querySelectorAll('.asset-row')].map(r=>asset(r.querySelector('.atype').value,r.querySelector('.aqty').value,r.querySelector('.afreq').value))}function generateContract(){let info={customerName:val('customerName'),contactPerson:val('contactPerson'),email:val('email'),phone:val('phone'),siteAddress:val('siteAddress'),startDate:val('startDate'),term:val('term'),margin:val('margin'),status:val('status')};let c=makeContract(info,currentAssets());contracts.push(c);generatedHTML=contractHTML(c);document.getElementById('preview').innerHTML=generatedHTML;render();}function val(id){return document.getElementById(id).value}function contractHTML(c){return `<div class="top"><h1>Paramount Airconditioning</h1><p class="tag">Preventative Maintenance Agreement</p><p>Comfort Engineered for Australia</p></div><h2>Client Details</h2><table><tr><td>Client</td><td>${c.customerName}</td></tr><tr><td>Site</td><td>${c.siteAddress}</td></tr><tr><td>Contact</td><td>${c.contactPerson}</td></tr><tr><td>Email</td><td>${c.email}</td></tr><tr><td>Phone</td><td>${c.phone}</td></tr><tr><td>Term</td><td>${c.term} months, commencing ${c.startDate}</td></tr></table><h2>Purpose</h2><p>This agreement outlines the preventative maintenance services to be provided by Paramount Airconditioning (Aust) Pty Ltd. The objective is to maximise equipment reliability, improve operating efficiency and minimise unexpected breakdowns.</p><h2>Equipment Covered</h2><table><tr><th>Equipment</th><th>Quantity</th><th>Frequency</th></tr>${c.assets.map(a=>`<tr><td>${a.type}</td><td>${a.qty}</td><td>${a.freq}</td></tr>`).join('')}</table><h2>Contract Pricing</h2><table><tr><td>Projected annual delivery cost</td><td>${money(c.cost)}</td></tr><tr><td>Annual contract value ex GST</td><td>${money(c.annual)}</td></tr><tr><td>Monthly recurring revenue ex GST</td><td>${money(c.monthly)}</td></tr></table><h2>Acceptance</h2><p>Client signature: ____________________ Date: __________</p><p>Paramount signature: _________________ Date: __________</p>`}function downloadContract(){if(!generatedHTML)return alert('Generate a contract first.');let blob=new Blob([`<!doctype html><html><head><title>Maintenance Contract</title></head><body>${generatedHTML}</body></html>`],{type:'text/html'});let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='paramount-maintenance-contract.html';a.click()}document.getElementById('docUpload').onchange=e=>document.getElementById('docList').textContent=[...e.target.files].map(f=>f.name).join(', ')||'No documents uploaded.';document.getElementById('assetUpload').onchange=e=>{let f=e.target.files[0];if(!f)return;let reader=new FileReader();reader.onload=()=>{try{let text=reader.result;let rows=f.name.endsWith('.json')?JSON.parse(text):text.trim().split(/\r?\n/).slice(1).map(l=>{let [type,qty,freq]=l.split(',');return{type:type.trim(),quantity:qty,frequency:freq.trim()}});document.getElementById('assets').innerHTML='';rows.forEach(r=>addAsset(r.type,r.quantity||r.qty,r.frequency||r.freq))}catch(err){alert('Could not read asset list. Use columns: type,quantity,frequency')}};reader.readAsText(f)};addAsset('Package Unit',5,'Quarterly');addAsset('Split System',10,'Quarterly');addAsset('Exhaust Fan',4,'Six Monthly');render();
-</script>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand-block">
+        <div class="logo-mark">P</div>
+        <div>
+          <div class="brand-name">Paramount</div>
+          <div class="brand-sub">Maintenance Contracts</div>
+        </div>
+      </div>
+      <nav class="nav">
+        <button class="nav-link active" data-view="dashboard">Dashboard</button>
+        <button class="nav-link" data-view="contracts">Maintenance Contracts Generated</button>
+        <button class="nav-link" data-view="new-contract">New Contract Set Up</button>
+        <button class="nav-link" data-view="proposal">Proposal Generator</button>
+        <button class="nav-link" data-view="settings">Costing Rules</button>
+      </nav>
+      <div class="side-note">
+        <span class="pill">Demo</span>
+        <p>Fake costings for prototype use only. Replace rules with approved Paramount estimating rates before live use.</p>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Comfort Engineered for Australia</p>
+          <h1 id="page-title">Maintenance Proposal Platform</h1>
+        </div>
+        <div class="top-actions">
+          <button class="ghost-btn" id="loadSampleBtn">Load Sample Data</button>
+          <button class="primary-btn" data-view-button="new-contract">New Proposal</button>
+        </div>
+      </header>
+
+      <section id="dashboard" class="view active">
+        <div class="hero-panel">
+          <div>
+            <span class="section-chip">01</span>
+            <h2>Recurring revenue, contract risk and proposal pipeline in one place.</h2>
+            <p>Upload customer details and asset schedules, apply internal costing rules, then generate a branded customer-facing maintenance proposal and an internal profitability review.</p>
+          </div>
+          <div class="hero-card">
+            <span>Pipeline value</span>
+            <strong id="pipelineValue">$0</strong>
+            <small>Draft and outstanding proposals</small>
+          </div>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi"><span>Total active maintenance contracts</span><strong id="activeContracts">0</strong></div>
+          <div class="kpi"><span>Total contracts value</span><strong id="totalValue">$0</strong></div>
+          <div class="kpi"><span>Monthly recurring revenue</span><strong id="mrr">$0</strong></div>
+          <div class="kpi"><span>Expiring in 30 days</span><strong id="exp30">0</strong></div>
+          <div class="kpi"><span>Expiring in 60 days</span><strong id="exp60">0</strong></div>
+          <div class="kpi"><span>Expiring in 90 days</span><strong id="exp90">0</strong></div>
+        </div>
+
+        <div class="two-col">
+          <div class="panel">
+            <div class="panel-head"><h3>Revenue forecast</h3><span class="muted">Next 12 months</span></div>
+            <div id="forecastBars" class="bars"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>Contracts needing attention</h3><span class="muted">Outstanding / draft</span></div>
+            <div id="attentionList" class="attention-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="contracts" class="view">
+        <div class="panel">
+          <div class="panel-head">
+            <div><span class="section-chip">02</span><h2>Maintenance contracts generated</h2></div>
+            <button class="primary-btn" data-view-button="new-contract">Create New</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Customer</th><th>Status</th><th>Annual value</th><th>Projected cost</th><th>Profit</th><th>Margin</th><th>Expiry</th><th></th></tr></thead>
+              <tbody id="contractsTable"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="contractDetail" class="panel detail-panel"></div>
+      </section>
+
+      <section id="new-contract" class="view">
+        <div class="panel">
+          <div class="panel-head"><div><span class="section-chip">03</span><h2>New contract set up</h2></div></div>
+          <div class="setup-grid">
+            <div>
+              <h3>Customer details</h3>
+              <p class="muted">Upload a customer CSV or type the details below.</p>
+              <div class="upload-box"><input type="file" id="customerFile" accept=".csv" /><label for="customerFile">Upload customer CSV</label></div>
+              <div class="form-grid">
+                <label>Customer name<input id="customerName" value="Southbank Data Hall" /></label>
+                <label>Site address<input id="siteAddress" value="81 Riverside Drive, Southbank VIC" /></label>
+                <label>Contact person<input id="contactPerson" value="Operations Lead" /></label>
+                <label>Email<input id="email" value="ops@southbankdatahall.com.au" /></label>
+                <label>Phone<input id="phone" value="03 9000 1111" /></label>
+                <label>Contract term months<input id="term" type="number" value="36" /></label>
+                <label>Target margin %<input id="targetMargin" type="number" value="38" /></label>
+                <label>Start date<input id="startDate" type="date" value="2026-07-01" /></label>
+              </div>
+            </div>
+            <div>
+              <h3>Asset list</h3>
+              <p class="muted">Upload the fake asset register or paste/add assets manually.</p>
+              <div class="upload-box"><input type="file" id="assetFile" accept=".csv" /><label for="assetFile">Upload asset CSV</label></div>
+              <div class="asset-entry">
+                <select id="assetType"></select>
+                <input id="assetQty" type="number" value="1" min="1" />
+                <select id="assetFreq"><option>Monthly</option><option>Quarterly</option><option>Six Monthly</option><option>Annual</option></select>
+                <input id="assetLocation" placeholder="Location" value="Roof Plantroom" />
+                <button class="ghost-btn" id="addAssetBtn">Add Asset</button>
+              </div>
+              <div class="table-wrap small"><table><thead><tr><th>Asset</th><th>Qty</th><th>Frequency</th><th>Location</th><th></th></tr></thead><tbody id="draftAssets"></tbody></table></div>
+            </div>
+          </div>
+          <div class="action-row">
+            <button class="ghost-btn" id="downloadCustomerTemplate">Download customer template</button>
+            <button class="ghost-btn" id="downloadAssetTemplate">Download asset template</button>
+            <button class="primary-btn" id="generateContractBtn">Generate Maintenance Proposal</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="proposal" class="view">
+        <div class="proposal-actions no-print">
+          <button class="ghost-btn" id="showInternalBtn">Internal Costing</button>
+          <button class="ghost-btn" id="showCustomerBtn">Customer Proposal</button>
+          <button class="primary-btn" id="printBtn">Print / Save as PDF</button>
+          <button class="primary-btn" id="downloadHtmlBtn">Download Proposal HTML</button>
+        </div>
+        <div id="proposalOutput" class="proposal-document"></div>
+      </section>
+
+      <section id="settings" class="view">
+        <div class="panel">
+          <div class="panel-head"><div><span class="section-chip">04</span><h2>Fake Paramount costing rules</h2></div></div>
+          <p class="muted">These prototype rates are intentionally fake. They make the demo work but should be replaced with approved internal rules.</p>
+          <div id="rulesGrid" class="rules-grid"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
